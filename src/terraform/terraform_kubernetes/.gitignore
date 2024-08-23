@@ -1,5 +1,6 @@
 ### Terraform template
 # Local .terraform directories
+**/.terraform/*
 .terraform.lock.hcl
 # .tfstate files
 *.tfstate
@@ -31,4 +32,3 @@ override.tf.json
 
 storage.key
 backend.hcl
-.DS_Store

@@ -74,7 +74,7 @@
 
   <img src="./screenshots/screenshots_6.png" alt="alt text" width="700"/>
 
-Код инфраструктуры в директории [terraform](./terraform/)
+Код инфраструктуры в директории [terraform](./src/terraform/)
 
 ---
 
