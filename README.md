@@ -54,19 +54,24 @@
 Решение:
 
 - Создан бакет и настроен backend для файлов состояния:
+
   <img src="./screenshots/screenshots_1.png" alt="alt text" width="700"/>
 
 - Создана сеть и подсети d 3-х зонах доступности, публичная для мастера, приватная для рабочих узлов:
+
   <img src="./screenshots/screenshots_2.png" alt="alt text" width="700"/>
 
 - Создан региональный Kubernetes кластер в 3-х зонах доступности:
+
   <img src="./screenshots/screenshots_3.png" alt="alt text" width="700"/>
   <img src="./screenshots/screenshots_4.png" alt="alt text" width="700"/>
 
 - Создана группа узлов из 3-х узлов в каждой зоне доступности в приватной сети без внешнего IP-адреса и шлюзом для доступа в интернет:
+
   <img src="./screenshots/screenshots_5.png" alt="alt text" width="700"/>
 
 - Общий вид созданной инфраструктуры:
+
   <img src="./screenshots/screenshots_6.png" alt="alt text" width="700"/>
 
 Код инфраструктуры в директории [terraform](./terraform/)
