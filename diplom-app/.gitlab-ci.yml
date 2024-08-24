@@ -1,0 +1,42 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "main"
+      variables:
+        NAMESPACE: "master"
+        PROJECT: "diplom-app"
+        KUBE_ID: "cat8unatmc0t289fm8d1"
+
+build:
+  stage: build
+  image: docker:20-dind
+  services: ['docker:dind']
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker login -u $DOCKER_USER -p $DOCKER_PASS
+    - docker build -t alexgavaz/diplom-app:latest .
+    - docker push alexgavaz/diplom-app:latest
+
+.deploy_template:
+  stage: deploy
+  image: registry.apptimizm.pro/templates/image/alpine:3-13
+  tags: [services]
+  before_script:
+    - apk update && apk add curl bash
+    - curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+    - chmod +x ./kubectl && mv ./kubectl /usr/local/bin/kubectl
+    - curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+    - cat $YC_CONFIG > ~/.config/yandex-cloud/config.yaml
+
+  script:
+    - /root/yandex-cloud/bin/yc managed-kubernetes cluster get-credentials --id $KUBE_ID --external
+    - kubectl create namespace $NAMESPACE || true
+    - kubectl delete secret git-docker-registry -n $NAMESPACE || true
+    - kubectl create secret docker-registry git-docker-registry --docker-server=https://index.docker.io/v1/ --docker-username=$DOCKER_USER --docker-password=$DOCKER_PASS --docker-email=$DOCKER_USER -n $NAMESPACE
+    - kubectl apply -f deployment.yaml
+    - kubectl rollout status deployment/$PROJECT -n $NAMESPACE
+
+deploy:
+  extends: .deploy_template
+  stage: deploy
