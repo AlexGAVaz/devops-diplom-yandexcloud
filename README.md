@@ -79,38 +79,43 @@
 
 ### Создание тестового приложения
 
-Для перехода к следующему этапу необходимо подготовить тестовое приложение, эмулирующее основное приложение разрабатываемое вашей компанией.
-
-Способ подготовки:
-
-1. Рекомендуемый вариант:  
-   а. Создайте отдельный git репозиторий с простым nginx конфигом, который будет отдавать статические данные.  
-   б. Подготовьте Dockerfile для создания образа приложения.
-2. Альтернативный вариант:  
-   а. Используйте любой другой код, главное, чтобы был самостоятельно создан Dockerfile.
-
 Ожидаемый результат:
 
 1. Git репозиторий с тестовым приложением и Dockerfile.
 2. Регистри с собранным docker image. В качестве регистри может быть DockerHub или [Yandex Container Registry](https://cloud.yandex.ru/services/container-registry), созданный также с помощью terraform.
 
+Решение:
+
+- Создан репозиторий приложения:
+
+  <img src="./screenshots/screenshots_8.png" alt="alt text" width="700"/>
+  <img src="./screenshots/screenshots_8.1.png" alt="alt text" width="700"/>
+
+- Собран образ с тегом `latest` и отправлен в [Docker Registry](https://hub.docker.com/repository/docker/alexgavaz/diplom-app/):
+
+  <img src="./screenshots/screenshots_9.png" alt="alt text" width="700"/>
+
+- Собран образ с тегом `1.0.0` и отправлен в [Docker Registry](https://hub.docker.com/repository/docker/alexgavaz/diplom-app/):
+
+  <img src="./screenshots/screenshots_10.png" alt="alt text" width="700"/>
+
+- Поднятое приложение в кластер с разными тегами и его доступность через LoadBalancer:
+
+  <img src="./screenshots/screenshots_10.1.png" alt="alt text" width="700"/>
+
+  <img src="./screenshots/screenshots_10.2.png" alt="alt text" width="700"/>
+
+  <img src="./screenshots/screenshots_10.3.png" alt="alt text" width="700"/>
+
+  <img src="./screenshots/screenshots_10.4.png" alt="alt text" width="700"/>
+
+  <img src="./screenshots/screenshots_10.5.png" alt="alt text" width="700"/>
+
+Код приложения в директории [diplom-app](./diplom-app/)
+
 ---
 
 ### Подготовка cистемы мониторинга и деплой приложения
-
-Уже должны быть готовы конфигурации для автоматического создания облачной инфраструктуры и поднятия Kubernetes кластера.  
-Теперь необходимо подготовить конфигурационные файлы для настройки нашего Kubernetes кластера.
-
-Цель:
-
-1. Задеплоить в кластер [prometheus](https://prometheus.io/), [grafana](https://grafana.com/), [alertmanager](https://github.com/prometheus/alertmanager), [экспортер](https://github.com/prometheus/node_exporter) основных метрик Kubernetes.
-2. Задеплоить тестовое приложение, например, [nginx](https://www.nginx.com/) сервер отдающий статическую страницу.
-
-Способ выполнения:
-
-1. Воспользоваться пакетом [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus), который уже включает в себя [Kubernetes оператор](https://operatorhub.io/) для [grafana](https://grafana.com/), [prometheus](https://prometheus.io/), [alertmanager](https://github.com/prometheus/alertmanager) и [node_exporter](https://github.com/prometheus/node_exporter). Альтернативный вариант - использовать набор helm чартов от [bitnami](https://github.com/bitnami/charts/tree/main/bitnami).
-
-2. Если на первом этапе вы не воспользовались [Terraform Cloud](https://app.terraform.io/), то задеплойте и настройте в кластере [atlantis](https://www.runatlantis.io/) для отслеживания изменений инфраструктуры. Альтернативный вариант 3 задания: вместо Terraform Cloud или atlantis настройте на автоматический запуск и применение конфигурации terraform из вашего git-репозитория в выбранной вами CI-CD системе при любом комите в main ветку. Предоставьте скриншоты работы пайплайна из CI/CD системы.
 
 Ожидаемый результат:
 
@@ -119,18 +124,38 @@
 3. Дашборды в grafana отображающие состояние Kubernetes кластера.
 4. Http доступ к тестовому приложению.
 
+Решение:
+
+- Манифест для конфигурации Kubernetes установлен из репозитория [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) командами:
+
+```shel
+    - git clone https://github.com/prometheus-operator/kube-prometheus.git
+    - kubectl apply --server-side -f manifests/setup
+    - kubectl wait \
+	      --for condition=Established \
+	      --all CustomResourceDefinition \
+	      --namespace=monitoring
+    - kubectl apply -f manifests/
+```
+
+Дополнительно изменен сервис для создания LoadBalancer:
+
+```
+    - kubectl patch svc grafana -n monitoring -p '{"spec": {"type": "LoadBalancer"}}'
+```
+
+- Состав компонентов kube-prometheus:
+
+  <img src="./screenshots/screenshots_11.png" alt="alt text" width="700"/>
+
+- Http доступ к web интерфейсу и дашборды Grafana:
+
+  <img src="./screenshots/screenshots_12.png" alt="alt text" width="700"/>
+  <img src="./screenshots/screenshots_13.png" alt="alt text" width="700"/>
+
 ---
 
 ### Установка и настройка CI/CD
-
-Осталось настроить ci/cd систему для автоматической сборки docker image и деплоя приложения при изменении кода.
-
-Цель:
-
-1. Автоматическая сборка docker образа при коммите в репозиторий с тестовым приложением.
-2. Автоматический деплой нового docker образа.
-
-Можно использовать [teamcity](https://www.jetbrains.com/ru-ru/teamcity/), [jenkins](https://www.jenkins.io/), [GitLab CI](https://about.gitlab.com/stages-devops-lifecycle/continuous-integration/) или GitHub Actions.
 
 Ожидаемый результат:
 
@@ -138,14 +163,12 @@
 2. При любом коммите в репозиторие с тестовым приложением происходит сборка и отправка в регистр Docker образа.
 3. При создании тега (например, v1.0.0) происходит сборка и отправка с соответствующим label в регистри, а также деплой соответствующего Docker образа в кластер Kubernetes.
 
+Решение:
+
+- CI/CD я начал делать сразу и был создан файд [.gitlab-ci.yml](./diplom-app/.gitlab-ci.yml). Настроен что при коммите выполняется стадия `build` собирается образ приложения с тегом `latest`, а если выставляется тег то собирается образ приложения с тегом выставленным разработчиком. Каждый раз после создания билда, выполняется стадия deploy и подставляется образ который был собран предидущей стадией `build` в зависимости от тега:
+
+  <img src="./screenshots/screenshots_14.png" alt="alt text" width="700"/>
+  <img src="./screenshots/screenshots_15.png" alt="alt text" width="700"/>
+
 ---
 
-## Что необходимо для сдачи задания?
-
-1. Репозиторий с конфигурационными файлами Terraform и готовность продемонстрировать создание всех ресурсов с нуля.
-2. Пример pull request с комментариями созданными atlantis'ом или снимки экрана из Terraform Cloud или вашего CI-CD-terraform pipeline.
-3. Репозиторий с конфигурацией ansible, если был выбран способ создания Kubernetes кластера при помощи ansible.
-4. Репозиторий с Dockerfile тестового приложения и ссылка на собранный docker image.
-5. Репозиторий с конфигурацией Kubernetes кластера.
-6. Ссылка на тестовое приложение и веб интерфейс Grafana с данными доступа.
-7. Все репозитории рекомендуется хранить на одном ресурсе (github, gitlab)
